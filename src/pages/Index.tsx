@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,79 +23,15 @@ interface Venue {
   description: string;
 }
 
-const mockVenues: Venue[] = [
-  {
-    id: 1,
-    name: 'Золотой Век',
-    city: 'Москва',
-    capacity: 200,
-    price: 150000,
-    type: 'Свадьба',
-    image: 'https://images.unsplash.com/photo-1519167758481-83f29da8c2b8?w=800&h=600&fit=crop',
-    rating: 4.9,
-    description: 'Роскошный банкетный зал с классическим интерьером и панорамными окнами'
-  },
-  {
-    id: 2,
-    name: 'Империал Холл',
-    city: 'Санкт-Петербург',
-    capacity: 300,
-    price: 250000,
-    type: 'Корпоратив',
-    image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&h=600&fit=crop',
-    rating: 4.8,
-    description: 'Элегантное пространство с мраморными колоннами и хрустальными люстрами'
-  },
-  {
-    id: 3,
-    name: 'Версаль',
-    city: 'Казань',
-    capacity: 150,
-    price: 120000,
-    type: 'Банкет',
-    image: 'https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=800&h=600&fit=crop',
-    rating: 4.7,
-    description: 'Изысканный зал в стиле французского барокко с садом для церемоний'
-  },
-  {
-    id: 4,
-    name: 'Атриум',
-    city: 'Екатеринбург',
-    capacity: 250,
-    price: 180000,
-    type: 'Свадьба',
-    image: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&h=600&fit=crop',
-    rating: 4.9,
-    description: 'Современный зал с атриумом, живой зеленью и естественным светом'
-  },
-  {
-    id: 5,
-    name: 'Кристалл',
-    city: 'Новосибирск',
-    capacity: 180,
-    price: 140000,
-    type: 'Корпоратив',
-    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
-    rating: 4.6,
-    description: 'Элегантное пространство с авторским дизайном и премиум-акустикой'
-  },
-  {
-    id: 6,
-    name: 'Аристократ',
-    city: 'Москва',
-    capacity: 220,
-    price: 200000,
-    type: 'Банкет',
-    image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&h=600&fit=crop',
-    rating: 4.8,
-    description: 'Дворцовый зал с антикварной мебелью и изысканным декором'
-  }
-];
+const VENUES_API = 'https://functions.poehali.dev/89b5443f-1acb-4437-b288-67a2c9ec58e9';
+const BOOKINGS_API = 'https://functions.poehali.dev/14ff27d7-afde-4e60-902c-e7cff5320fb4';
 
 const cities = ['Все города', 'Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск'];
 const eventTypes = ['Все типы', 'Свадьба', 'Корпоратив', 'Банкет'];
 
 export default function Index() {
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCity, setSelectedCity] = useState('Все города');
   const [selectedType, setSelectedType] = useState('Все типы');
   const [minCapacity, setMinCapacity] = useState('');
@@ -103,13 +39,35 @@ export default function Index() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [guests, setGuests] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
-  const filteredVenues = mockVenues.filter(venue => {
-    const cityMatch = selectedCity === 'Все города' || venue.city === selectedCity;
-    const typeMatch = selectedType === 'Все типы' || venue.type === selectedType;
-    const capacityMatch = !minCapacity || venue.capacity >= parseInt(minCapacity);
-    return cityMatch && typeMatch && capacityMatch;
-  });
+  useEffect(() => {
+    fetchVenues();
+  }, [selectedCity, selectedType, minCapacity]);
+
+  const fetchVenues = async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (selectedCity && selectedCity !== 'Все города') params.append('city', selectedCity);
+    if (selectedType && selectedType !== 'Все типы') params.append('type', selectedType);
+    if (minCapacity) params.append('minCapacity', minCapacity);
+
+    try {
+      const response = await fetch(`${VENUES_API}?${params.toString()}`);
+      const data = await response.json();
+      setVenues(data.venues || []);
+    } catch (error) {
+      console.error('Error fetching venues:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredVenues = venues;
 
   const calculateCommission = (price: number) => {
     return price * 0.03;
@@ -122,6 +80,50 @@ export default function Index() {
   const handleBooking = (venue: Venue) => {
     setSelectedVenue(venue);
     setIsBookingOpen(true);
+    setBookingSuccess(false);
+  };
+
+  const submitBooking = async () => {
+    if (!selectedVenue || !selectedDate || !guests || !customerName || !customerEmail || !customerPhone) {
+      return;
+    }
+
+    setBookingLoading(true);
+
+    try {
+      const response = await fetch(BOOKINGS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          venueId: selectedVenue.id,
+          customerName,
+          customerEmail,
+          customerPhone,
+          eventDate: format(selectedDate, 'yyyy-MM-dd'),
+          guestsCount: parseInt(guests)
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setBookingSuccess(true);
+        setTimeout(() => {
+          setIsBookingOpen(false);
+          setCustomerName('');
+          setCustomerEmail('');
+          setCustomerPhone('');
+          setGuests('');
+          setSelectedDate(undefined);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   return (
@@ -236,8 +238,19 @@ export default function Index() {
       </section>
 
       <section className="py-16 container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredVenues.map((venue, index) => (
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Icon name="Loader2" size={48} className="animate-spin text-primary" />
+          </div>
+        ) : filteredVenues.length === 0 ? (
+          <div className="text-center py-20">
+            <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-2xl font-bold text-foreground mb-2">Залы не найдены</h3>
+            <p className="text-muted-foreground">Попробуйте изменить параметры фильтрации</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredVenues.map((venue, index) => (
             <Card 
               key={venue.id} 
               className="group overflow-hidden hover:shadow-2xl transition-all duration-500 border-border bg-card cursor-pointer animate-fade-in"
@@ -295,8 +308,9 @@ export default function Index() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
@@ -310,8 +324,56 @@ export default function Index() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedVenue && (
+          {selectedVenue && !bookingSuccess && (
             <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-foreground">Ваше имя</Label>
+                  <Input
+                    placeholder="Иван Иванов"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="bg-background border-border"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-foreground">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="ivan@example.com"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="bg-background border-border"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-foreground">Телефон</Label>
+                  <Input
+                    type="tel"
+                    placeholder="+7 (900) 123-45-67"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="bg-background border-border"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-foreground">Количество гостей</Label>
+                  <Input
+                    type="number"
+                    placeholder="Введите количество"
+                    value={guests}
+                    onChange={(e) => setGuests(e.target.value)}
+                    max={selectedVenue.capacity}
+                    className="bg-background border-border"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-foreground">Дата мероприятия</Label>
@@ -331,21 +393,6 @@ export default function Index() {
                       />
                     </PopoverContent>
                   </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-foreground">Количество гостей</Label>
-                  <Input
-                    type="number"
-                    placeholder="Введите количество"
-                    value={guests}
-                    onChange={(e) => setGuests(e.target.value)}
-                    max={selectedVenue.capacity}
-                    className="bg-background border-border"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Максимум: {selectedVenue.capacity} гостей
-                  </p>
                 </div>
               </div>
 
@@ -384,11 +431,39 @@ export default function Index() {
 
               <Button 
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-6"
-                disabled={!selectedDate || !guests}
+                disabled={!selectedDate || !guests || !customerName || !customerEmail || !customerPhone || bookingLoading}
+                onClick={submitBooking}
               >
-                <Icon name="CheckCircle" className="mr-2" />
-                Подтвердить бронирование
+                {bookingLoading ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 animate-spin" />
+                    Оформление...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="CheckCircle" className="mr-2" />
+                    Подтвердить бронирование
+                  </>
+                )}
               </Button>
+            </div>
+          )}
+
+          {bookingSuccess && (
+            <div className="text-center py-8 space-y-4 animate-fade-in">
+              <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto">
+                <Icon name="CheckCircle" size={40} className="text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold text-foreground">Бронирование успешно создано!</h3>
+              <p className="text-muted-foreground">
+                Мы отправили подтверждение на {customerEmail}.<br />
+                Владелец зала свяжется с вами в ближайшее время.
+              </p>
+              <div className="bg-secondary/30 rounded-lg p-4 text-sm">
+                <p className="text-muted-foreground">
+                  После подтверждения владельцем будет автоматически взиматься комиссия 3% от стоимости аренды.
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>

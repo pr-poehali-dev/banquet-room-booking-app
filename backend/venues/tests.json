@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "Get all venues",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "venues": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Filter venues by city",
+      "method": "GET",
+      "path": "/?city=Москва",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "venues": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

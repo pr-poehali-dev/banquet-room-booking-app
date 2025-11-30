@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Get all bookings",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "bookings": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create booking",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "venueId": 1,
+        "customerName": "Иван Петров",
+        "customerEmail": "ivan@example.com",
+        "customerPhone": "+79001234567",
+        "eventDate": "2024-12-25",
+        "guestsCount": 100
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "booking": {
+          "id": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
