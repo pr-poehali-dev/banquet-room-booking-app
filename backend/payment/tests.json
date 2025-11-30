@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "Create payment",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "bookingId": 1,
+        "amount": 154500,
+        "description": "Оплата бронирования зала Золотой Век",
+        "returnUrl": "https://example.com/success"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "paymentId": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -25,6 +25,7 @@ interface Venue {
 
 const VENUES_API = 'https://functions.poehali.dev/89b5443f-1acb-4437-b288-67a2c9ec58e9';
 const BOOKINGS_API = 'https://functions.poehali.dev/14ff27d7-afde-4e60-902c-e7cff5320fb4';
+const PAYMENT_API = 'https://functions.poehali.dev/371d06d8-7e06-4c04-ba45-a55f554e1b5e';
 
 const cities = ['Все города', 'Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск'];
 const eventTypes = ['Все типы', 'Свадьба', 'Корпоратив', 'Банкет'];
@@ -108,16 +109,38 @@ export default function Index() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        setBookingSuccess(true);
-        setTimeout(() => {
-          setIsBookingOpen(false);
-          setCustomerName('');
-          setCustomerEmail('');
-          setCustomerPhone('');
-          setGuests('');
-          setSelectedDate(undefined);
-        }, 3000);
+      if (response.ok && data.booking) {
+        const bookingId = data.booking.id;
+        const totalAmount = data.booking.totalAmount;
+        
+        const paymentResponse = await fetch(PAYMENT_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            bookingId: bookingId,
+            amount: totalAmount,
+            description: `Оплата бронирования зала ${selectedVenue.name}`,
+            returnUrl: window.location.origin + '/success'
+          })
+        });
+
+        const paymentData = await paymentResponse.json();
+
+        if (paymentResponse.ok && paymentData.confirmationUrl) {
+          window.location.href = paymentData.confirmationUrl;
+        } else {
+          setBookingSuccess(true);
+          setTimeout(() => {
+            setIsBookingOpen(false);
+            setCustomerName('');
+            setCustomerEmail('');
+            setCustomerPhone('');
+            setGuests('');
+            setSelectedDate(undefined);
+          }, 3000);
+        }
       }
     } catch (error) {
       console.error('Error creating booking:', error);

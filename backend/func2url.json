@@ -1,4 +1,6 @@
 {
+  "payment": "https://functions.poehali.dev/371d06d8-7e06-4c04-ba45-a55f554e1b5e",
+  "payment-webhook": "https://functions.poehali.dev/b9ab2134-96dc-4bf9-bca1-990bb37187db",
   "venues": "https://functions.poehali.dev/89b5443f-1acb-4437-b288-67a2c9ec58e9",
   "bookings": "https://functions.poehali.dev/14ff27d7-afde-4e60-902c-e7cff5320fb4"
 }

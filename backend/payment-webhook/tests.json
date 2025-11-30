@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Process payment webhook",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "type": "notification",
+        "event": "payment.succeeded",
+        "object": {
+          "id": "test-payment-id",
+          "status": "succeeded",
+          "metadata": {
+            "booking_id": "1"
+          }
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
